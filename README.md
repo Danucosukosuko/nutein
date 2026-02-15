@@ -1,6 +1,6 @@
-# gemini-desktop
+# NuteIn
 
-### TuneIn Desktop App, an electron wrapper for tunein.com
+### TuneIn Desktop App, modded to the perfection.
 
 * For development with gemini-web
   * set up and run https://github.com/tunein/gemini-web locally
