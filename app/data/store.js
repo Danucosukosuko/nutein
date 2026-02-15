@@ -65,6 +65,8 @@ module.exports = {
             windowBounds: { width: 1200, height: 800 },
             rtid: '',
             partnerId: '',
+            nuteinTweaksEnabled: true,
+            nuteinAdsEnabled: false,
           },
         });
       }
