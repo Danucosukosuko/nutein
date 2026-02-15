@@ -1,0 +1,56 @@
+{
+  "directories": {
+    "output": "dist",
+    "buildResources": "build"
+  },
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://cdn-desktop-dev.tunein.com/release/"
+    }
+  ],
+  "appId": "com.tunein.desktop",
+  "mac": {
+    "category": "public.app-category.player",
+    "target": [
+      {
+        "target": "default",
+        "arch": "universal"
+      }
+    ],
+    "extendInfo": {
+      "LSMultipleInstancesProhibited": true
+    }
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64",
+          "ia32"
+        ]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "artifactName": "${productName}-Setup-${version}.${ext}"
+  },
+  "productName": "TuneIn-LOCAL",
+  "dmg": {
+    "title": "TuneIn-LOCAL",
+    "icon": "build/icon.icns",
+    "iconSize": 60,
+    "contents": [
+      {
+        "x": 139,
+        "y": 220
+      },
+      {
+        "x": 401,
+        "y": 215,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  }
+}

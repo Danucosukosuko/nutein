@@ -1,0 +1,94 @@
+<html>
+<head>
+  <title>NuteIn</title>
+  <style>
+    body {
+      margin: 0;
+    }
+    webview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      max-height: 100%;
+      max-width: 100%;
+    }
+    webview.mac {
+      top: 38px; /* offset webview position by height of titlebar */
+      height: calc(100% - 38px); /* offset webview height by height of titlebar */
+    }
+    .hide {
+      visibility: hidden; /* important: `display: none` will cause webview to collapse, breaking lazy load */
+    }
+    .loader {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      color: rgba(0, 0, 0, 0.7);
+    }
+    .tunedin {
+      background: url('assets/tunein.gif') 0 no-repeat;
+    }
+    .loader-hide {
+      display: none;
+    }
+    ::selection { background: white; /* WebKit/Blink Browsers */ }
+    .draggable-titlebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 38px; /* height of titlebar */
+      background-color: #f6f8f6;
+      /* enables app window mouse-dragging on titlebar */
+      -webkit-app-region: drag; /* https://electronjs.org/docs/api/frameless-window#draggable-region */
+    }
+    .nav-button {
+      position: absolute;
+      top: 51%; /* offset to make elements visually centered */
+      height: 16px;
+      width: 16px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      /* disables app window mouse-dragging on nav buttons */
+      -webkit-app-region: no-drag; /* https://electronjs.org/docs/api/frameless-window#draggable-region */
+    }
+    .nav-button--back {
+      left: 80px;
+      background: url('assets/back-button.svg') 0 no-repeat;
+    }
+    .nav-button--forward {
+      left: 110px;
+      background: url('assets/forward-button.svg') 0 no-repeat;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="draggable-titlebar hide">
+    <div class="nav-button nav-button--back"></div>
+    <div class="nav-button nav-button--forward"></div>
+  </div>
+
+  <div class="loader">
+    <div class="tunedin"></div>
+  </div>
+
+  <webview
+    allowpopups
+    class="hide"
+    preload="./preload.js"
+    nodeintegrationinsubframes="true"
+    webpreferences="contextIsolation=no,sandbox=false"
+  ></webview>
+
+  <script>
+    require('./renderer');
+  </script>
+</body>
+</html>

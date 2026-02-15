@@ -1,0 +1,15 @@
+Certificates: Not Encrypted
+================ Certificate 0 ================
+================ Begin Nesting Level 1 ================
+Element 0:
+Serial Number: 3137363532393334373535323632343836373934
+Issuer: CN=4bfb348f-610a-4c2e-88b8-44d1923bd1cd
+ NotBefore: 12/9/2025 12:00 AM
+ NotAfter: 11/1/2026 11:59 PM
+Subject: E=techops+vendor@tunein.com, CN=c3c8e510-328d-4112-962b-9cdb377a0d61
+Non-root Certificate
+Cert Hash(sha1): b3a0d42f323b190e024c0ccf4f906af65c258f08
+----------------  End Nesting Level 1  ----------------
+  Provider = Microsoft Enhanced Cryptographic Provider v1.0
+Encryption test passed
+CertUtil: -dump command completed successfully.

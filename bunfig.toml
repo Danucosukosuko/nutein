@@ -1,0 +1,2 @@
+[install.scopes]
+"@tunein" = { token = "$NPM_TOKEN", url = "https://registry.npmjs.org/" }

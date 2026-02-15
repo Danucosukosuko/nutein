@@ -1,0 +1,3 @@
+provider: generic
+url: https://cdn-desktop-dev.tunein.com/release/
+updaterCacheDirName: gemini-desktop-updater

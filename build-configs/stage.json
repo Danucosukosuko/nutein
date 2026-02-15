@@ -1,0 +1,64 @@
+{
+  "directories": {
+    "output": "dist",
+    "buildResources": "build"
+  },
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://cdn-desktop-qa.tunein.com/release/"
+    }
+  ],
+  "appId": "com.tunein.desktop",
+  "afterSign": "build/afterSign.js",
+  "mac": {
+    "category": "public.app-category.player",
+    "target": [
+      "zip",
+      "dmg"
+    ],
+    "entitlements": "build/prod-entitlements.mas.plist",
+    "entitlementsInherit": "build/prod-entitlements.mas.plist",
+    "hardenedRuntime": true,
+    "extendInfo": {
+      "LSMultipleInstancesProhibited": true
+    }
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64",
+          "ia32"
+        ]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "signtoolOptions": {
+      "rfc3161TimeStampServer": "http://timestamp.digicert.com",
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
+    }
+  },
+  "productName": "TuneIn-STAGE",
+  "dmg": {
+    "title": "TuneIn-STAGE",
+    "icon": "build/icon.icns",
+    "iconSize": 60,
+    "contents": [
+      {
+        "x": 139,
+        "y": 220
+      },
+      {
+        "x": 401,
+        "y": 215,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  }
+}

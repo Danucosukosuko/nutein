@@ -1,0 +1,67 @@
+{
+  "directories": {
+    "output": "dist",
+    "buildResources": "build"
+  },
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://cdn-desktop.tunein.com/release/"
+    }
+  ],
+  "appId": "com.tunein.desktop",
+  "afterSign": "build/afterSign.js",
+  "mac": {
+    "category": "public.app-category.player",
+    "target": [
+      {
+        "target": "default",
+        "arch": "universal"
+      }
+    ],
+    "entitlements": "build/prod-entitlements.mas.plist",
+    "entitlementsInherit": "build/prod-entitlements.mas.plist",
+    "hardenedRuntime": true,
+    "type": "distribution",
+    "extendInfo": {
+      "LSMultipleInstancesProhibited": true
+    }
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64",
+          "ia32"
+        ]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "signtoolOptions": {
+      "rfc3161TimeStampServer": "http://timestamp.digicert.com",
+      "signingHashAlgorithms": [
+        "sha256"
+      ]
+    }
+  },
+  "productName": "TuneIn",
+  "dmg": {
+    "title": "TuneIn",
+    "icon": "build/icon.icns",
+    "iconSize": 60,
+    "contents": [
+      {
+        "x": 139,
+        "y": 220
+      },
+      {
+        "x": 401,
+        "y": 215,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  }
+}
