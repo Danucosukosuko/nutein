@@ -32,7 +32,15 @@
       color: rgba(0, 0, 0, 0.7);
     }
     .tunedin {
-      background: url('assets/tunein.gif') 0 no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tunedin img {
+      max-width: none;
+      max-height: none;
+      width: auto;
+      height: auto;
     }
     .loader-hide {
       display: none;
@@ -76,7 +84,9 @@
   </div>
 
   <div class="loader">
-    <div class="tunedin"></div>
+    <div class="tunedin">
+      <img src="assets/tunein.gif" alt="tunein loader" />
+    </div>
   </div>
 
   <webview
