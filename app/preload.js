@@ -46,11 +46,27 @@ function getNuteinConfig() {
   };
 }
 
-function setNuteinConfig(config) {
-  store.set(nuteinTweaksEnabled, !!config.tweaksEnabled);
-  store.set(nuteinAdsEnabled, !!config.adsEnabled);
-  store.set(nuteinDisableTelemetryCrashReports, !!config.disableTelemetryCrashReports);
-  store.set(nuteinDisableUpdates, !!config.disableUpdates);
+function setNuteinConfig(config = {}) {
+  const currentConfig = getNuteinConfig();
+  const nextConfig = {
+    tweaksEnabled: typeof config.tweaksEnabled === 'boolean'
+      ? config.tweaksEnabled
+      : currentConfig.tweaksEnabled,
+    adsEnabled: typeof config.adsEnabled === 'boolean'
+      ? config.adsEnabled
+      : currentConfig.adsEnabled,
+    disableTelemetryCrashReports: typeof config.disableTelemetryCrashReports === 'boolean'
+      ? config.disableTelemetryCrashReports
+      : currentConfig.disableTelemetryCrashReports,
+    disableUpdates: typeof config.disableUpdates === 'boolean'
+      ? config.disableUpdates
+      : currentConfig.disableUpdates,
+  };
+
+  store.set(nuteinTweaksEnabled, nextConfig.tweaksEnabled);
+  store.set(nuteinAdsEnabled, nextConfig.adsEnabled);
+  store.set(nuteinDisableTelemetryCrashReports, nextConfig.disableTelemetryCrashReports);
+  store.set(nuteinDisableUpdates, nextConfig.disableUpdates);
 }
 
 function isTuneinHost() {
@@ -62,6 +78,69 @@ function removeUpsellButton() {
   if (upsellButton) {
     upsellButton.remove();
   }
+}
+
+function injectTweaksCss() {
+  if (document.getElementById('nutein-tweaks-style')) {
+    return;
+  }
+
+  const style = document.createElement('style');
+  style.id = 'nutein-tweaks-style';
+  style.textContent = `
+    [class*="leftSide-module__navigationMenuItemWrapper"] {
+      margin-bottom: 2px !important;
+    }
+
+    [class*="leftSide-module__navigationMenuItem"] {
+      border-radius: 10px !important;
+    }
+
+    [class*="leftSide-module__navigationMenuItem"]:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    [class*="simplebar-scrollbar"]::before {
+      background: rgba(255, 255, 255, 0.35) !important;
+    }
+  `;
+
+  const styleContainer = document.head || document.documentElement;
+  styleContainer.appendChild(style);
+}
+
+function removeTweaksCss() {
+  const style = document.getElementById('nutein-tweaks-style');
+  if (style) {
+    style.remove();
+  }
+}
+
+function hideOptionalSidebarItems() {
+  const optionalMenuTestIds = [
+    'premiumMenuItem',
+    'audiobooksMenuItem',
+    'mapViewMenuItem',
+  ];
+
+  optionalMenuTestIds.forEach((testId) => {
+    const menuItem = document.querySelector(`[data-testid="${testId}"]`);
+    if (!menuItem) {
+      return;
+    }
+
+    const wrapper = menuItem.closest('[class*="navigationMenuItemWrapper"]') || menuItem;
+    wrapper.style.display = 'none';
+  });
+}
+
+function restoreOptionalSidebarItems() {
+  const hiddenItems = document.querySelectorAll('[data-testid="premiumMenuItem"], [data-testid="audiobooksMenuItem"], [data-testid="mapViewMenuItem"]');
+
+  hiddenItems.forEach((menuItem) => {
+    const wrapper = menuItem.closest('[class*="navigationMenuItemWrapper"]') || menuItem;
+    wrapper.style.display = '';
+  });
 }
 
 function removeAdsDomElements() {
@@ -132,6 +211,13 @@ function hideAdsWithCss() {
 
   const styleContainer = document.head || document.documentElement;
   styleContainer.appendChild(style);
+}
+
+function removeAdblockCss() {
+  const style = document.getElementById('nutein-adblock-style');
+  if (style) {
+    style.remove();
+  }
 }
 
 function removeAdIframes() {
@@ -231,7 +317,7 @@ function openNuteinSettingsModal() {
     <h2 style="margin:0 0 12px 0;font-size:20px;">NuteIn Settings</h2>
     <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
       <input id="nutein-tweaks-toggle" type="checkbox" ${currentConfig.tweaksEnabled ? 'checked' : ''} />
-      <span>Activar tweaks visuales (menú + ocultar prueba gratis)</span>
+      <span>Activar tweaks visuales (limpieza + sidebar compacto)</span>
     </label>
     <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
       <input id="nutein-ads-toggle" type="checkbox" ${currentConfig.adsEnabled ? 'checked' : ''} />
@@ -321,15 +407,21 @@ function applyNuteinTweaks() {
     hideAdsWithCss();
     removeAdsDomElements();
     removeAdIframes();
+  } else {
+    removeAdblockCss();
   }
 
   replaceTuneinCopyright();
 
   if (!config.tweaksEnabled) {
+    removeTweaksCss();
+    restoreOptionalSidebarItems();
     return;
   }
 
+  injectTweaksCss();
   removeUpsellButton();
+  hideOptionalSidebarItems();
 }
 
 function startNuteinTweaksObserver() {

@@ -75,8 +75,17 @@ function includesAdKeyword(value) {
   return adUrlKeywordPatterns.some(pattern => lowerValue.includes(pattern));
 }
 
+function isTuneInFirstPartyHost(hostname) {
+  const normalizedHost = (hostname || '').toLowerCase();
+  return normalizedHost === 'tunein.com' || normalizedHost.endsWith('.tunein.com');
+}
+
 function isBlockedByAdRules(hostname, requestUrl, resourceType) {
   const normalizedHost = (hostname || '').toLowerCase();
+
+  if (resourceType === 'mainFrame' || isTuneInFirstPartyHost(normalizedHost)) {
+    return false;
+  }
 
   const matchesBlockedDomain = normalizedHost && Array.from(adBlockDomains).some(domain => (
     normalizedHost === domain || normalizedHost.endsWith(`.${domain}`)
@@ -86,12 +95,12 @@ function isBlockedByAdRules(hostname, requestUrl, resourceType) {
     return true;
   }
 
-  if (includesAdKeyword(requestUrl) || includesAdKeyword(normalizedHost)) {
-    return true;
+  const adLikeResourceTypes = ['subFrame', 'image', 'media', 'script', 'xhr'];
+  if (adLikeResourceTypes.includes(resourceType)) {
+    return includesAdKeyword(requestUrl) || includesAdKeyword(normalizedHost);
   }
 
-  return ['subFrame', 'image', 'media', 'script', 'xhr'].includes(resourceType)
-    && includesAdKeyword(requestUrl);
+  return false;
 }
 
 function loadHostsAdBlockList() {
@@ -149,8 +158,9 @@ function setupAdBlocker(session, preferenceStore) {
       const requestUrl = details.url || '';
       const requestHost = new URL(requestUrl).hostname;
       const initiator = details.initiator || details.referrer || '';
+      const initiatorHost = initiator ? new URL(initiator).hostname : '';
       const shouldBlock = isBlockedByAdRules(requestHost, requestUrl, details.resourceType)
-        || includesAdKeyword(initiator);
+        || (!isTuneInFirstPartyHost(initiatorHost) && includesAdKeyword(initiator));
 
       callback({ cancel: shouldBlock });
     } catch {
