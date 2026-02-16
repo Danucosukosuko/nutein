@@ -1,9 +1,15 @@
 const electron = require('electron');
+const https = require('https');
 const { default: isDev } = require('electron-is-dev');
 const sendAppEvent = require('./utils/sendAppEvent');
 const updater = require('./updater');
 const { getStore } = require('./data/store');
-const { windowBounds } = require('./constants/store');
+const {
+  windowBounds,
+  nuteinAdsEnabled,
+  nuteinDisableTelemetryCrashReports,
+  nuteinDisableUpdates,
+} = require('./constants/store');
 const rendererStore = require('./constants/rendererStore');
 const menu = require('./menu');
 const registerKeyboardShortcuts = require('./registerShortcuts');
@@ -20,17 +26,129 @@ const {
 } = require('./utils/menuHelper');
 const { getFbUrls } = require('./utils/oauthUrlHelpers');
 const setCustomUserAgent = require('./utils/setCustomUserAgent');
-# const initCrashReporter = require('./utils/initCrashReporter');
+const initCrashReporter = require('./utils/initCrashReporter');
 const isMacEnvironment = require('./utils/isMacEnvironment');
 const invokeWebContentsMethod = require('./utils/invokeWebContentsMethod');
 const deepLinkEventHandler = require('./utils/deeplink/deepLinkEventHandler');
 const { parseUrl } = require('./utils/url');
 const { initLogger } = require('./utils/logger');
-const { setMainWebContentsById, getMainWebContents } = require('./utils/webContents'); 
+const { setMainWebContentsById, getMainWebContents } = require('./utils/webContents');
 const { openShareDialog } = require('./shareDialog');
 const env = require('./env.json');
 const { productName, deepLinkProtocol } = require('./constants/general');
 const events = require('./constants/events');
+
+const adBlockDomains = new Set([
+  'googleadservices.com',
+  'googlesyndication.com',
+  'doubleclick.net',
+  'ad.doubleclick.net',
+  'pubads.g.doubleclick.net',
+  'g.doubleclick.net',
+  'securepubads.g.doubleclick.net',
+  'pagead2.googlesyndication.com',
+  'partner.googleadservices.com',
+  'tpc.googlesyndication.com',
+]);
+const adTechHostKeywords = [
+  'doubleclick',
+  'googlesyndication',
+  'googleadservices',
+  'adservice',
+  'adsystem',
+];
+let adBlockRulesLoaded = false;
+
+function isTuneInFirstPartyHost(hostname) {
+  const normalizedHost = (hostname || '').toLowerCase();
+  return normalizedHost === 'tunein.com' || normalizedHost.endsWith('.tunein.com');
+}
+
+function isKnownAdTechHost(hostname) {
+  const normalizedHost = (hostname || '').toLowerCase();
+  return adTechHostKeywords.some(keyword => normalizedHost.includes(keyword));
+}
+
+function isBlockedByAdRules(hostname, resourceType) {
+  const normalizedHost = (hostname || '').toLowerCase();
+
+  if (!normalizedHost || resourceType === 'mainFrame' || isTuneInFirstPartyHost(normalizedHost)) {
+    return false;
+  }
+
+  const matchesBlockedDomain = Array.from(adBlockDomains).some(domain => (
+    normalizedHost === domain || normalizedHost.endsWith(`.${domain}`)
+  ));
+
+  if (matchesBlockedDomain) {
+    return true;
+  }
+
+  const adLikeResourceTypes = ['subFrame', 'image', 'media', 'script', 'xhr'];
+  return adLikeResourceTypes.includes(resourceType) && isKnownAdTechHost(normalizedHost);
+}
+
+function loadHostsAdBlockList() {
+  if (adBlockRulesLoaded) {
+    return;
+  }
+
+  adBlockRulesLoaded = true;
+  https.get('https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts', (response) => {
+    let data = '';
+
+    response.on('data', (chunk) => {
+      data += chunk;
+    });
+
+    response.on('end', () => {
+      data.split('\n').forEach((line) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine || trimmedLine.startsWith('#')) {
+          return;
+        }
+
+        const [ip, host] = trimmedLine.split(/\s+/);
+        if (!ip || !host || host === 'localhost') {
+          return;
+        }
+
+        const normalizedHost = host.toLowerCase();
+        if (isKnownAdTechHost(normalizedHost)) {
+          adBlockDomains.add(normalizedHost);
+        }
+      });
+    });
+  }).on('error', () => {
+    // ignore network errors and keep fallback list
+  });
+}
+
+function setupAdBlocker(session, preferenceStore) {
+  loadHostsAdBlockList();
+
+  const requestFilter = { urls: ['*://*/*'] };
+
+  session.webRequest.onBeforeRequest(requestFilter, (details, callback) => {
+    const adsEnabled = preferenceStore.get(nuteinAdsEnabled);
+    if (adsEnabled === true) {
+      callback({ cancel: false });
+      return;
+    }
+
+    try {
+      const requestHost = new URL(details.url || '').hostname;
+      const initiator = details.initiator || details.referrer || '';
+      const initiatorHost = initiator ? new URL(initiator).hostname : '';
+      const shouldBlock = isBlockedByAdRules(requestHost, details.resourceType)
+        || (isKnownAdTechHost(requestHost) && !isTuneInFirstPartyHost(initiatorHost));
+
+      callback({ cancel: shouldBlock });
+    } catch {
+      callback({ cancel: false });
+    }
+  });
+}
 
 const { app, ipcMain, BrowserWindow } = electron;
 const store = getStore();
@@ -38,7 +156,9 @@ let mainWindow = null; // should be set to null
 let softClose = true;
 let localizations;
 
-initCrashReporter();
+if (!store.get(nuteinDisableTelemetryCrashReports)) {
+  initCrashReporter();
+}
 
 function quitHandler() {
   softClose = false; // we want the installer to fully quit the app
@@ -88,10 +208,12 @@ function onGeminiInitialization(event) {
   mainWindow.on('minimize', () => disableMenuHistory(menuInstance));
   mainWindow.on('restore', () => enableMenuHistory(menuInstance));
 
-  // auto updater
-  updater.initialize(quitHandler, geminiEventSender, menuInstance, localizations);
-  // gemini-web listener to handle user-initiated app update
-  ipcMain.on(events.quitDesktopAndInstallUpdate, updater.quitAndInstallUpdate);
+  if (!store.get(nuteinDisableUpdates)) {
+    // auto updater
+    updater.initialize(quitHandler, geminiEventSender, menuInstance, localizations);
+    // gemini-web listener to handle user-initiated app update
+    ipcMain.on(events.quitDesktopAndInstallUpdate, updater.quitAndInstallUpdate);
+  }
 }
 
 function setupRendererStoreProvider() {
@@ -139,6 +261,7 @@ function createAppWindow() {
   mainWindow = new BrowserWindow(browserWindowOptions);
 
   setCustomUserAgent(mainWindow.webContents.session);
+  setupAdBlocker(mainWindow.webContents.session, store);
 
   // for the mac app, we don't want to quit the application when the window is closed
   if (isMac) {
