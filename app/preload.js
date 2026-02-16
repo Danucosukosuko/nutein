@@ -1,7 +1,24 @@
 const { ipcRenderer } = require('electron');
 const transform = require('lodash/transform');
 const events = require('./constants/events');
-const { rtid, partnerId } = require('./constants/store');
+const {
+  rtid,
+  partnerId,
+  nuteinTweaksEnabled,
+  nuteinAdsEnabled,
+  nuteinDisableTelemetryCrashReports,
+  nuteinDisableUpdates,
+  nuteinHidePremiumMenu,
+  nuteinHideAudiobooksMenu,
+  nuteinHideRadioMenu,
+  nuteinHideRecentsMenu,
+  nuteinHideMusicMenu,
+  nuteinHideSportsMenu,
+  nuteinHideNewsMenu,
+  nuteinHidePodcastsMenu,
+  nuteinHideRegionsMenu,
+  nuteinHideLanguagesMenu,
+} = require('./constants/store');
 const localizationKeys = require('./constants/localizations');
 const { getStore } = require('./data/store');
 
@@ -10,28 +27,544 @@ const attachMousetrapListeners = require('./attachMousetrapListeners');
 
 const store = getStore();
 
+const defaultNuteinConfig = {
+  tweaksEnabled: false,
+  adsEnabled: false,
+  disableTelemetryCrashReports: true,
+  disableUpdates: true,
+  hidePremiumMenu: false,
+  hideAudiobooksMenu: false,
+  hideRadioMenu: false,
+  hideRecentsMenu: false,
+  hideMusicMenu: false,
+  hideSportsMenu: false,
+  hideNewsMenu: false,
+  hidePodcastsMenu: false,
+  hideRegionsMenu: false,
+  hideLanguagesMenu: false,
+};
+
+function getBooleanConfigValue(value, fallbackValue) {
+  return typeof value === 'boolean' ? value : fallbackValue;
+}
+
+function getNuteinConfig() {
+  return {
+    tweaksEnabled: getBooleanConfigValue(store.get(nuteinTweaksEnabled), defaultNuteinConfig.tweaksEnabled),
+    adsEnabled: getBooleanConfigValue(store.get(nuteinAdsEnabled), defaultNuteinConfig.adsEnabled),
+    disableTelemetryCrashReports: getBooleanConfigValue(
+      store.get(nuteinDisableTelemetryCrashReports),
+      defaultNuteinConfig.disableTelemetryCrashReports,
+    ),
+    disableUpdates: getBooleanConfigValue(store.get(nuteinDisableUpdates), defaultNuteinConfig.disableUpdates),
+    hidePremiumMenu: getBooleanConfigValue(store.get(nuteinHidePremiumMenu), defaultNuteinConfig.hidePremiumMenu),
+    hideAudiobooksMenu: getBooleanConfigValue(store.get(nuteinHideAudiobooksMenu), defaultNuteinConfig.hideAudiobooksMenu),
+    hideRadioMenu: getBooleanConfigValue(store.get(nuteinHideRadioMenu), defaultNuteinConfig.hideRadioMenu),
+    hideRecentsMenu: getBooleanConfigValue(store.get(nuteinHideRecentsMenu), defaultNuteinConfig.hideRecentsMenu),
+    hideMusicMenu: getBooleanConfigValue(store.get(nuteinHideMusicMenu), defaultNuteinConfig.hideMusicMenu),
+    hideSportsMenu: getBooleanConfigValue(store.get(nuteinHideSportsMenu), defaultNuteinConfig.hideSportsMenu),
+    hideNewsMenu: getBooleanConfigValue(store.get(nuteinHideNewsMenu), defaultNuteinConfig.hideNewsMenu),
+    hidePodcastsMenu: getBooleanConfigValue(store.get(nuteinHidePodcastsMenu), defaultNuteinConfig.hidePodcastsMenu),
+    hideRegionsMenu: getBooleanConfigValue(store.get(nuteinHideRegionsMenu), defaultNuteinConfig.hideRegionsMenu),
+    hideLanguagesMenu: getBooleanConfigValue(store.get(nuteinHideLanguagesMenu), defaultNuteinConfig.hideLanguagesMenu),
+  };
+}
+
+function setNuteinConfig(config = {}) {
+  const currentConfig = getNuteinConfig();
+  const nextConfig = {
+    tweaksEnabled: typeof config.tweaksEnabled === 'boolean' ? config.tweaksEnabled : currentConfig.tweaksEnabled,
+    adsEnabled: typeof config.adsEnabled === 'boolean' ? config.adsEnabled : currentConfig.adsEnabled,
+    disableTelemetryCrashReports: typeof config.disableTelemetryCrashReports === 'boolean'
+      ? config.disableTelemetryCrashReports
+      : currentConfig.disableTelemetryCrashReports,
+    disableUpdates: typeof config.disableUpdates === 'boolean' ? config.disableUpdates : currentConfig.disableUpdates,
+    hidePremiumMenu: typeof config.hidePremiumMenu === 'boolean' ? config.hidePremiumMenu : currentConfig.hidePremiumMenu,
+    hideAudiobooksMenu: typeof config.hideAudiobooksMenu === 'boolean' ? config.hideAudiobooksMenu : currentConfig.hideAudiobooksMenu,
+    hideRadioMenu: typeof config.hideRadioMenu === 'boolean' ? config.hideRadioMenu : currentConfig.hideRadioMenu,
+    hideRecentsMenu: typeof config.hideRecentsMenu === 'boolean' ? config.hideRecentsMenu : currentConfig.hideRecentsMenu,
+    hideMusicMenu: typeof config.hideMusicMenu === 'boolean' ? config.hideMusicMenu : currentConfig.hideMusicMenu,
+    hideSportsMenu: typeof config.hideSportsMenu === 'boolean' ? config.hideSportsMenu : currentConfig.hideSportsMenu,
+    hideNewsMenu: typeof config.hideNewsMenu === 'boolean' ? config.hideNewsMenu : currentConfig.hideNewsMenu,
+    hidePodcastsMenu: typeof config.hidePodcastsMenu === 'boolean' ? config.hidePodcastsMenu : currentConfig.hidePodcastsMenu,
+    hideRegionsMenu: typeof config.hideRegionsMenu === 'boolean' ? config.hideRegionsMenu : currentConfig.hideRegionsMenu,
+    hideLanguagesMenu: typeof config.hideLanguagesMenu === 'boolean'
+      ? config.hideLanguagesMenu
+      : currentConfig.hideLanguagesMenu,
+  };
+
+  store.set(nuteinTweaksEnabled, nextConfig.tweaksEnabled);
+  store.set(nuteinAdsEnabled, nextConfig.adsEnabled);
+  store.set(nuteinDisableTelemetryCrashReports, nextConfig.disableTelemetryCrashReports);
+  store.set(nuteinDisableUpdates, nextConfig.disableUpdates);
+  store.set(nuteinHidePremiumMenu, nextConfig.hidePremiumMenu);
+  store.set(nuteinHideAudiobooksMenu, nextConfig.hideAudiobooksMenu);
+  store.set(nuteinHideRadioMenu, nextConfig.hideRadioMenu);
+  store.set(nuteinHideRecentsMenu, nextConfig.hideRecentsMenu);
+  store.set(nuteinHideMusicMenu, nextConfig.hideMusicMenu);
+  store.set(nuteinHideSportsMenu, nextConfig.hideSportsMenu);
+  store.set(nuteinHideNewsMenu, nextConfig.hideNewsMenu);
+  store.set(nuteinHidePodcastsMenu, nextConfig.hidePodcastsMenu);
+  store.set(nuteinHideRegionsMenu, nextConfig.hideRegionsMenu);
+  store.set(nuteinHideLanguagesMenu, nextConfig.hideLanguagesMenu);
+}
+
+function isTuneinHost() {
+  return /(^|\.)tunein\.com$/i.test(window.location.hostname);
+}
+
+function removeUpsellButton() {
+  const upsellButton = document.getElementById('sidebarUpsellLink');
+  if (upsellButton) {
+    upsellButton.remove();
+  }
+}
+
+function injectTweaksCss() {
+  if (document.getElementById('nutein-tweaks-style')) {
+    return;
+  }
+
+  const style = document.createElement('style');
+  style.id = 'nutein-tweaks-style';
+  style.textContent = `
+    [class*="leftSide-module__navigationMenuItemWrapper"] {
+      margin-bottom: 2px !important;
+    }
+
+    [class*="leftSide-module__navigationMenuItem"] {
+      border-radius: 10px !important;
+    }
+
+    [class*="leftSide-module__navigationMenuItem"]:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    [class*="simplebar-scrollbar"]::before {
+      background: rgba(255, 255, 255, 0.35) !important;
+    }
+  `;
+
+  const styleContainer = document.head || document.documentElement;
+  styleContainer.appendChild(style);
+}
+
+function removeTweaksCss() {
+  const style = document.getElementById('nutein-tweaks-style');
+  if (style) {
+    style.remove();
+  }
+}
+
+function setSidebarItemHidden(testId, shouldHide) {
+  const menuItem = document.querySelector(`[data-testid="${testId}"]`);
+  if (!menuItem) {
+    return;
+  }
+
+  const wrapper = menuItem.closest('[class*="navigationMenuItemWrapper"]') || menuItem;
+  wrapper.style.display = shouldHide ? 'none' : '';
+}
+
+function applySidebarVisibilityTweaks(config) {
+  setSidebarItemHidden('premiumMenuItem', config.hidePremiumMenu);
+  setSidebarItemHidden('audiobooksMenuItem', config.hideAudiobooksMenu);
+  setSidebarItemHidden('mapViewMenuItem', config.hideRadioMenu);
+  setSidebarItemHidden('recentsMenuItem', config.hideRecentsMenu);
+  setSidebarItemHidden('musicMenuItem', config.hideMusicMenu);
+  setSidebarItemHidden('sportsMenuItem', config.hideSportsMenu);
+  setSidebarItemHidden('newsMenuItem', config.hideNewsMenu);
+  setSidebarItemHidden('podcastsMenuItem', config.hidePodcastsMenu);
+  setSidebarItemHidden('regionsMenuItem', config.hideRegionsMenu);
+  setSidebarItemHidden('languagesMenuItem', config.hideLanguagesMenu);
+}
+
+function restoreSidebarVisibilityTweaks() {
+  [
+    'premiumMenuItem',
+    'audiobooksMenuItem',
+    'mapViewMenuItem',
+    'recentsMenuItem',
+    'musicMenuItem',
+    'sportsMenuItem',
+    'newsMenuItem',
+    'podcastsMenuItem',
+    'regionsMenuItem',
+    'languagesMenuItem',
+  ].forEach(testId => setSidebarItemHidden(testId, false));
+}
+
+function removeAdsDomElements() {
+  const sidebarUpsell = document.getElementById('sidebarUpsell');
+  if (sidebarUpsell) {
+    sidebarUpsell.remove();
+  }
+
+  const bottomBannerContainer = document.querySelector('[class*="bottom-banner-module__container"]');
+  if (bottomBannerContainer) {
+    bottomBannerContainer.remove();
+  }
+
+  const bottomBannerAd = document.getElementById('tunein_bottom_banner');
+  if (bottomBannerAd) {
+    const bottomBannerWrapper = bottomBannerAd.closest('[class*="bottom-banner-module__container"]')
+      || bottomBannerAd.closest('div[style*="text-align: center"]')
+      || bottomBannerAd;
+    bottomBannerWrapper.remove();
+  }
+
+  const profileSideAd = document.getElementById('tunein_profile_side');
+  if (profileSideAd) {
+    const sideAdWrapper = profileSideAd.closest('div[style*="float: right"]')
+      || profileSideAd;
+    sideAdWrapper.remove();
+  }
+
+  const adUnitAnchor = document.getElementById('ad_unit');
+  if (adUnitAnchor) {
+    const adUnitWrapper = adUnitAnchor.closest('div[style*="float: right"]')
+      || adUnitAnchor;
+    adUnitWrapper.remove();
+  }
+}
+
+function hideAdsWithCss() {
+  if (document.getElementById('nutein-adblock-style')) {
+    return;
+  }
+
+  const style = document.createElement('style');
+  style.id = 'nutein-adblock-style';
+  style.textContent = `
+    #sidebarUpsell,
+    #sidebarUpsellLink,
+    #tunein_bottom_banner,
+    #tunein_profile_side,
+    #ad_unit,
+    [data-freestar-ad],
+    [id^="google_ads_iframe"],
+    [id*="google_ads_iframe"],
+    iframe[src*="doubleclick"],
+    iframe[src*="googlesyndication"],
+    iframe[title*="Anuncio"],
+    iframe[aria-label*="Anuncio"],
+    [class*="bottom-banner-module__container"],
+    [class*="upsell-module__sidebarWrapper"],
+    [class*="ad-module"],
+    [data-testid="adUnit"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      max-height: 0 !important;
+      pointer-events: none !important;
+    }
+  `;
+
+  const styleContainer = document.head || document.documentElement;
+  styleContainer.appendChild(style);
+}
+
+function removeAdblockCss() {
+  const style = document.getElementById('nutein-adblock-style');
+  if (style) {
+    style.remove();
+  }
+}
+
+function removeAdIframes() {
+  const adIframes = document.querySelectorAll(
+    'iframe[src*="doubleclick"], iframe[src*="googlesyndication"], iframe[id*="google_ads_iframe"], iframe[title*="Anuncio"], iframe[aria-label*="Anuncio"]',
+  );
+
+  adIframes.forEach((iframe) => {
+    const wrapper = iframe.closest('[class*="bottom-banner-module__container"]')
+      || iframe.closest('div[style*="text-align: center"]')
+      || iframe.closest('div[style*="float: right"]')
+      || iframe;
+    wrapper.remove();
+  });
+}
+
+function replaceTuneinCopyright() {
+  const replacementUrl = 'https://github.com/danucosukosuko/nutein';
+  const replacementText = `NuteIn Client: ${replacementUrl}`;
+  const yearPattern = /©\s*\d{4}/i;
+
+  const footerCandidates = document.querySelectorAll('footer, [class*="footer"], [id*="footer"], small, span, p, a');
+
+  footerCandidates.forEach((element) => {
+    const text = element.textContent || '';
+    const normalizedText = text.replace(/\s+/g, ' ').trim();
+
+    if (!normalizedText) {
+      return;
+    }
+
+    const hasTuneInInc = /tunein\s*,?\s*inc/i.test(normalizedText);
+    const hasCopyright = yearPattern.test(normalizedText);
+
+    if (hasTuneInInc && hasCopyright) {
+      const copyrightPrefix = (normalizedText.match(yearPattern) || ['©'])[0];
+      element.textContent = `${copyrightPrefix} ${replacementText}`;
+      return;
+    }
+
+    if (/tunein\s*,?\s*inc/i.test(normalizedText) && /©/i.test(normalizedText)) {
+      element.textContent = normalizedText.replace(/tunein\s*,?\s*inc/ig, replacementText);
+      return;
+    }
+
+    if (/©\s*\d{4}\s*tunein/i.test(normalizedText)) {
+      element.textContent = normalizedText
+        .replace(/tunein\s*,?\s*inc/ig, replacementText)
+        .replace(/©\s*(\d{4})\s*tunein/ig, '© $1 NuteIn Client');
+    }
+  });
+
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+
+  while (node) {
+    const original = (node.textContent || '').replace(/\s+/g, ' ').trim();
+    if (/©\s*\d{4}/i.test(original) && /tunein\s*,?\s*inc/i.test(original)) {
+      const yearMatch = original.match(/©\s*\d{4}/i);
+      const prefix = yearMatch ? yearMatch[0] : '©';
+      node.textContent = `${prefix} ${replacementText}`;
+    }
+    node = walker.nextNode();
+  }
+}
+
+function openNuteinSettingsModal() {
+  if (document.getElementById('nutein-settings-modal-overlay')) {
+    return;
+  }
+
+  const currentConfig = getNuteinConfig();
+  const overlay = document.createElement('div');
+  overlay.id = 'nutein-settings-modal-overlay';
+  overlay.style.cssText = [
+    'position: fixed',
+    'inset: 0',
+    'background: rgba(0, 0, 0, 0.45)',
+    'display: flex',
+    'align-items: center',
+    'justify-content: center',
+    'z-index: 999999',
+  ].join(';');
+
+  const modal = document.createElement('div');
+  modal.style.cssText = [
+    'width: min(420px, 92vw)',
+    'background: #1c1d24',
+    'color: #fff',
+    'border: 1px solid #41434f',
+    'border-radius: 12px',
+    'padding: 20px',
+    'font-family: sans-serif',
+  ].join(';');
+
+  modal.innerHTML = `
+    <h2 style="margin:0 0 12px 0;font-size:20px;">NuteIn Settings</h2>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+      <input id="nutein-tweaks-toggle" type="checkbox" ${currentConfig.tweaksEnabled ? 'checked' : ''} />
+      <span>Enable visual tweaks (cleanup + compact sidebar)</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+      <input id="nutein-ads-toggle" type="checkbox" ${currentConfig.adsEnabled ? 'checked' : ''} />
+      <span>Enable ads (disabled means blocked)</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+      <input id="nutein-disable-telemetry-toggle" type="checkbox" ${currentConfig.disableTelemetryCrashReports ? 'checked' : ''} />
+      <span>Disable telemetry and crash reports</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+      <input id="nutein-disable-updates-toggle" type="checkbox" ${currentConfig.disableUpdates ? 'checked' : ''} />
+      <span>Disable automatic updates</span>
+    </label>
+
+    <hr style="border:0;border-top:1px solid #3a3d48;margin:12px 0;" />
+    <p style="margin:0 0 8px 0;font-size:13px;opacity:0.8;">Sidebar visibility tweaks</p>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-premium-menu-toggle" type="checkbox" ${currentConfig.hidePremiumMenu ? 'checked' : ''} />
+      <span>Hide Premium</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-audiobooks-menu-toggle" type="checkbox" ${currentConfig.hideAudiobooksMenu ? 'checked' : ''} />
+      <span>Hide Audiobooks</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-radio-menu-toggle" type="checkbox" ${currentConfig.hideRadioMenu ? 'checked' : ''} />
+      <span>Hide Radio</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-recents-menu-toggle" type="checkbox" ${currentConfig.hideRecentsMenu ? 'checked' : ''} />
+      <span>Hide Recents</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-music-menu-toggle" type="checkbox" ${currentConfig.hideMusicMenu ? 'checked' : ''} />
+      <span>Hide Music</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-sports-menu-toggle" type="checkbox" ${currentConfig.hideSportsMenu ? 'checked' : ''} />
+      <span>Hide Sports</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-news-menu-toggle" type="checkbox" ${currentConfig.hideNewsMenu ? 'checked' : ''} />
+      <span>Hide News & Talk</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-podcasts-menu-toggle" type="checkbox" ${currentConfig.hidePodcastsMenu ? 'checked' : ''} />
+      <span>Hide Podcasts</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-regions-menu-toggle" type="checkbox" ${currentConfig.hideRegionsMenu ? 'checked' : ''} />
+      <span>Hide By Location</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+      <input id="nutein-hide-languages-menu-toggle" type="checkbox" ${currentConfig.hideLanguagesMenu ? 'checked' : ''} />
+      <span>Hide By Language</span>
+    </label>
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button id="nutein-settings-cancel" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #555;background:#2a2d37;color:#fff;">Cancel</button>
+      <button id="nutein-settings-save" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #4f7dff;background:#4f7dff;color:#fff;">Save</button>
+    </div>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  const closeModal = () => overlay.remove();
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) {
+      closeModal();
+    }
+  });
+
+  modal.querySelector('#nutein-settings-cancel').addEventListener('click', closeModal);
+  modal.querySelector('#nutein-settings-save').addEventListener('click', () => {
+    const tweaksEnabled = modal.querySelector('#nutein-tweaks-toggle').checked;
+    const adsEnabled = modal.querySelector('#nutein-ads-toggle').checked;
+    const disableTelemetryCrashReports = modal.querySelector('#nutein-disable-telemetry-toggle').checked;
+    const disableUpdates = modal.querySelector('#nutein-disable-updates-toggle').checked;
+    const hidePremiumMenu = modal.querySelector('#nutein-hide-premium-menu-toggle').checked;
+    const hideAudiobooksMenu = modal.querySelector('#nutein-hide-audiobooks-menu-toggle').checked;
+    const hideRadioMenu = modal.querySelector('#nutein-hide-radio-menu-toggle').checked;
+    const hideRecentsMenu = modal.querySelector('#nutein-hide-recents-menu-toggle').checked;
+    const hideMusicMenu = modal.querySelector('#nutein-hide-music-menu-toggle').checked;
+    const hideSportsMenu = modal.querySelector('#nutein-hide-sports-menu-toggle').checked;
+    const hideNewsMenu = modal.querySelector('#nutein-hide-news-menu-toggle').checked;
+    const hidePodcastsMenu = modal.querySelector('#nutein-hide-podcasts-menu-toggle').checked;
+    const hideRegionsMenu = modal.querySelector('#nutein-hide-regions-menu-toggle').checked;
+    const hideLanguagesMenu = modal.querySelector('#nutein-hide-languages-menu-toggle').checked;
+
+    setNuteinConfig({
+      tweaksEnabled,
+      adsEnabled,
+      disableTelemetryCrashReports,
+      disableUpdates,
+      hidePremiumMenu,
+      hideAudiobooksMenu,
+      hideRadioMenu,
+      hideRecentsMenu,
+      hideMusicMenu,
+      hideSportsMenu,
+      hideNewsMenu,
+      hidePodcastsMenu,
+      hideRegionsMenu,
+      hideLanguagesMenu,
+    });
+    closeModal();
+    window.location.reload();
+  });
+}
+
+function injectNuteinMenuButton() {
+  const sidebarNavLinks = document.getElementById('sidebarNavLinks');
+  if (!sidebarNavLinks || document.getElementById('nutein-settings-menu-item')) {
+    return;
+  }
+
+  const wrapperClass = sidebarNavLinks.querySelector('[class*="navigationMenuItemWrapper"]')?.className
+    || 'leftSide-module__navigationMenuItemWrapper___wW1Lt';
+  const linkClass = sidebarNavLinks.querySelector('[class*="navigationMenuItem___"]')?.className
+    || 'leftSide-module__navigationMenuItem___snR6K common-module__link___Mz1h3';
+
+  const wrapper = document.createElement('div');
+  wrapper.className = wrapperClass;
+
+  const button = document.createElement('button');
+  button.id = 'nutein-settings-menu-item';
+  button.type = 'button';
+  button.className = linkClass;
+  button.style.width = '100%';
+  button.style.textAlign = 'left';
+  button.style.border = 'none';
+  button.style.background = 'transparent';
+  button.textContent = 'NuteIn Settings:';
+  button.addEventListener('click', openNuteinSettingsModal);
+
+  wrapper.appendChild(button);
+  sidebarNavLinks.appendChild(wrapper);
+}
+
+function applyNuteinTweaks() {
+  if (!isTuneinHost()) {
+    return;
+  }
+
+  const config = getNuteinConfig();
+
+  injectNuteinMenuButton();
+
+  if (!config.adsEnabled) {
+    hideAdsWithCss();
+    removeAdsDomElements();
+    removeAdIframes();
+  } else {
+    removeAdblockCss();
+  }
+
+  replaceTuneinCopyright();
+
+  if (!config.tweaksEnabled) {
+    removeTweaksCss();
+    restoreSidebarVisibilityTweaks();
+    return;
+  }
+
+  injectTweaksCss();
+  removeUpsellButton();
+  applySidebarVisibilityTweaks(config);
+}
+
+function startNuteinTweaksObserver() {
+  if (!isTuneinHost()) {
+    return;
+  }
+
+  applyNuteinTweaks();
+
+  const observer = new MutationObserver(() => {
+    applyNuteinTweaks();
+  });
+
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
+}
+
 /*
 ** in preload scripts, we have access to node.js and electron APIs
 ** the remote web app (tunein.com) will not, so this is safe
 */
 function init() {
-  // Expose a bridging API to remote app's window.
-  // We'll add methods to it here first, and when the remote web app loads,
-  // it'll add some additional methods as well.
-  //
-  // !CAREFUL! do not expose any functionality or APIs that could compromise the
-  // user's computer. E.g. don't directly expose core Electron (even IPC) or node.js modules.
   window.Bridge = {};
-
-  // *
-  // * listen to events triggered by gemini-web and handle in electron
-  // *
 
   window.Bridge.getSerial = () => store.get(rtid);
 
-  // this function is invoked in gemini componentDidMount
   window.Bridge.setUpGeminiEventSender = () => {
-    // this event is sent to main.js
     ipcRenderer.send(events.setUpGeminiEventSender);
   };
 
@@ -42,11 +575,12 @@ function init() {
     };
     const localizations = transform(localizationKeys, mapLocalizations, {});
 
-    // this event is sent to main.js
     ipcRenderer.send(events.setUpLocalizations, localizations);
   };
 
-  // GEMINI passes rtid after successful login
+  window.Bridge.getNuteinConfig = getNuteinConfig;
+  window.Bridge.setNuteinConfig = setNuteinConfig;
+
   window.Bridge.setSerial = (rtidValue) => {
     store.set(rtid, rtidValue);
   };
@@ -87,7 +621,6 @@ function init() {
     ipcRenderer.send(events.openShareDialog, url);
   };
 
-  // invoked in gemini-web when install desktop update banner is clicked by user
   window.Bridge.quitDesktopAndInstallUpdate = () => {
     ipcRenderer.send(events.quitDesktopAndInstallUpdate);
   };
@@ -96,9 +629,14 @@ function init() {
     ipcRenderer.send(events.reloadPage);
   };
 
-  // listen to internal events and pass to gemini-web
   attachIPCListeners();
   attachMousetrapListeners();
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startNuteinTweaksObserver, { once: true });
+  } else {
+    startNuteinTweaksObserver();
+  }
 }
 
 init();
