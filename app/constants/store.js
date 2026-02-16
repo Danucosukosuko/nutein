@@ -4,4 +4,6 @@ module.exports = {
   windowBounds: 'windowBounds',
   nuteinTweaksEnabled: 'nuteinTweaksEnabled',
   nuteinAdsEnabled: 'nuteinAdsEnabled',
+  nuteinDisableTelemetryCrashReports: 'nuteinDisableTelemetryCrashReports',
+  nuteinDisableUpdates: 'nuteinDisableUpdates',
 };

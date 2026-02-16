@@ -6,6 +6,8 @@ const {
   partnerId,
   nuteinTweaksEnabled,
   nuteinAdsEnabled,
+  nuteinDisableTelemetryCrashReports,
+  nuteinDisableUpdates,
 } = require('./constants/store');
 const localizationKeys = require('./constants/localizations');
 const { getStore } = require('./data/store');
@@ -16,13 +18,17 @@ const attachMousetrapListeners = require('./attachMousetrapListeners');
 const store = getStore();
 
 const defaultNuteinConfig = {
-  tweaksEnabled: true,
+  tweaksEnabled: false,
   adsEnabled: false,
+  disableTelemetryCrashReports: true,
+  disableUpdates: true,
 };
 
 function getNuteinConfig() {
   const tweaksEnabled = store.get(nuteinTweaksEnabled);
   const adsEnabled = store.get(nuteinAdsEnabled);
+  const disableTelemetryCrashReports = store.get(nuteinDisableTelemetryCrashReports);
+  const disableUpdates = store.get(nuteinDisableUpdates);
 
   return {
     tweaksEnabled: typeof tweaksEnabled === 'boolean'
@@ -31,12 +37,20 @@ function getNuteinConfig() {
     adsEnabled: typeof adsEnabled === 'boolean'
       ? adsEnabled
       : defaultNuteinConfig.adsEnabled,
+    disableTelemetryCrashReports: typeof disableTelemetryCrashReports === 'boolean'
+      ? disableTelemetryCrashReports
+      : defaultNuteinConfig.disableTelemetryCrashReports,
+    disableUpdates: typeof disableUpdates === 'boolean'
+      ? disableUpdates
+      : defaultNuteinConfig.disableUpdates,
   };
 }
 
 function setNuteinConfig(config) {
   store.set(nuteinTweaksEnabled, !!config.tweaksEnabled);
   store.set(nuteinAdsEnabled, !!config.adsEnabled);
+  store.set(nuteinDisableTelemetryCrashReports, !!config.disableTelemetryCrashReports);
+  store.set(nuteinDisableUpdates, !!config.disableUpdates);
 }
 
 function isTuneinHost() {
@@ -47,6 +61,57 @@ function removeUpsellButton() {
   const upsellButton = document.getElementById('sidebarUpsellLink');
   if (upsellButton) {
     upsellButton.remove();
+  }
+}
+
+function removeAdsDomElements() {
+  const sidebarUpsell = document.getElementById('sidebarUpsell');
+  if (sidebarUpsell) {
+    sidebarUpsell.remove();
+  }
+
+  const bottomBannerContainer = document.querySelector('[class*="bottom-banner-module__container"]');
+  if (bottomBannerContainer) {
+    bottomBannerContainer.remove();
+  }
+
+  const bottomBannerAd = document.getElementById('tunein_bottom_banner');
+  if (bottomBannerAd) {
+    const bottomBannerWrapper = bottomBannerAd.closest('[class*="bottom-banner-module__container"]')
+      || bottomBannerAd.closest('div[style*="text-align: center"]')
+      || bottomBannerAd;
+    bottomBannerWrapper.remove();
+  }
+
+  const profileSideAd = document.getElementById('tunein_profile_side');
+  if (profileSideAd) {
+    const sideAdWrapper = profileSideAd.closest('div[style*="float: right"]')
+      || profileSideAd;
+    sideAdWrapper.remove();
+  }
+
+  const adUnitAnchor = document.getElementById('ad_unit');
+  if (adUnitAnchor) {
+    const adUnitWrapper = adUnitAnchor.closest('div[style*="float: right"]')
+      || adUnitAnchor;
+    adUnitWrapper.remove();
+  }
+}
+
+function replaceTuneinCopyright() {
+  const currentYear = new Date().getFullYear();
+  const replacementText = `© ${currentYear} NuteIn Client: https://github.com/danucosukosuko/nutein`;
+  const copyrightRegex = /©\s*(\d{4})\s*TuneIn,\s*Inc/i;
+
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+
+  while (node) {
+    const textValue = node.textContent || '';
+    if (copyrightRegex.test(textValue)) {
+      node.textContent = textValue.replace(copyrightRegex, replacementText);
+    }
+    node = walker.nextNode();
   }
 }
 
@@ -85,9 +150,17 @@ function openNuteinSettingsModal() {
       <input id="nutein-tweaks-toggle" type="checkbox" ${currentConfig.tweaksEnabled ? 'checked' : ''} />
       <span>Activar tweaks visuales (menú + ocultar prueba gratis)</span>
     </label>
-    <label style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
       <input id="nutein-ads-toggle" type="checkbox" ${currentConfig.adsEnabled ? 'checked' : ''} />
       <span>Activar ADS (si está desactivado, se bloquean)</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+      <input id="nutein-disable-telemetry-toggle" type="checkbox" ${currentConfig.disableTelemetryCrashReports ? 'checked' : ''} />
+      <span>Deshabilitar telemetría y crash reports</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+      <input id="nutein-disable-updates-toggle" type="checkbox" ${currentConfig.disableUpdates ? 'checked' : ''} />
+      <span>Desactivar actualizaciones automáticas</span>
     </label>
     <div style="display:flex;justify-content:flex-end;gap:8px;">
       <button id="nutein-settings-cancel" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #555;background:#2a2d37;color:#fff;">Cancelar</button>
@@ -109,8 +182,15 @@ function openNuteinSettingsModal() {
   modal.querySelector('#nutein-settings-save').addEventListener('click', () => {
     const tweaksEnabled = modal.querySelector('#nutein-tweaks-toggle').checked;
     const adsEnabled = modal.querySelector('#nutein-ads-toggle').checked;
+    const disableTelemetryCrashReports = modal.querySelector('#nutein-disable-telemetry-toggle').checked;
+    const disableUpdates = modal.querySelector('#nutein-disable-updates-toggle').checked;
 
-    setNuteinConfig({ tweaksEnabled, adsEnabled });
+    setNuteinConfig({
+      tweaksEnabled,
+      adsEnabled,
+      disableTelemetryCrashReports,
+      disableUpdates,
+    });
     closeModal();
     window.location.reload();
   });
@@ -151,6 +231,13 @@ function applyNuteinTweaks() {
   }
 
   const config = getNuteinConfig();
+
+  if (!config.adsEnabled) {
+    removeAdsDomElements();
+  }
+
+  replaceTuneinCopyright();
+
   if (!config.tweaksEnabled) {
     return;
   }

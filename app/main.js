@@ -4,7 +4,12 @@ const { default: isDev } = require('electron-is-dev');
 const sendAppEvent = require('./utils/sendAppEvent');
 const updater = require('./updater');
 const { getStore } = require('./data/store');
-const { windowBounds, nuteinAdsEnabled } = require('./constants/store');
+const {
+  windowBounds,
+  nuteinAdsEnabled,
+  nuteinDisableTelemetryCrashReports,
+  nuteinDisableUpdates,
+} = require('./constants/store');
 const rendererStore = require('./constants/rendererStore');
 const menu = require('./menu');
 const registerKeyboardShortcuts = require('./registerShortcuts');
@@ -113,7 +118,9 @@ let mainWindow = null; // should be set to null
 let softClose = true;
 let localizations;
 
-initCrashReporter();
+if (!store.get(nuteinDisableTelemetryCrashReports)) {
+  initCrashReporter();
+}
 
 function quitHandler() {
   softClose = false; // we want the installer to fully quit the app
@@ -163,10 +170,12 @@ function onGeminiInitialization(event) {
   mainWindow.on('minimize', () => disableMenuHistory(menuInstance));
   mainWindow.on('restore', () => enableMenuHistory(menuInstance));
 
-  // auto updater
-  updater.initialize(quitHandler, geminiEventSender, menuInstance, localizations);
-  // gemini-web listener to handle user-initiated app update
-  ipcMain.on(events.quitDesktopAndInstallUpdate, updater.quitAndInstallUpdate);
+  if (!store.get(nuteinDisableUpdates)) {
+    // auto updater
+    updater.initialize(quitHandler, geminiEventSender, menuInstance, localizations);
+    // gemini-web listener to handle user-initiated app update
+    ipcMain.on(events.quitDesktopAndInstallUpdate, updater.quitAndInstallUpdate);
+  }
 }
 
 function setupRendererStoreProvider() {
