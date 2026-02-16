@@ -50,44 +50,33 @@ const adBlockDomains = new Set([
   'partner.googleadservices.com',
   'tpc.googlesyndication.com',
 ]);
-const adUrlKeywordPatterns = [
-  '/pagead/',
-  '/gampad/',
-  '/ads?',
-  '/ads/',
-  'googleads',
+const adTechHostKeywords = [
   'doubleclick',
   'googlesyndication',
+  'googleadservices',
   'adservice',
-  'freestar',
-  'prebid',
-  'advert',
-  '/hb?',
+  'adsystem',
 ];
 let adBlockRulesLoaded = false;
-
-function includesAdKeyword(value) {
-  if (!value) {
-    return false;
-  }
-
-  const lowerValue = value.toLowerCase();
-  return adUrlKeywordPatterns.some(pattern => lowerValue.includes(pattern));
-}
 
 function isTuneInFirstPartyHost(hostname) {
   const normalizedHost = (hostname || '').toLowerCase();
   return normalizedHost === 'tunein.com' || normalizedHost.endsWith('.tunein.com');
 }
 
-function isBlockedByAdRules(hostname, requestUrl, resourceType) {
+function isKnownAdTechHost(hostname) {
+  const normalizedHost = (hostname || '').toLowerCase();
+  return adTechHostKeywords.some(keyword => normalizedHost.includes(keyword));
+}
+
+function isBlockedByAdRules(hostname, resourceType) {
   const normalizedHost = (hostname || '').toLowerCase();
 
-  if (resourceType === 'mainFrame' || isTuneInFirstPartyHost(normalizedHost)) {
+  if (!normalizedHost || resourceType === 'mainFrame' || isTuneInFirstPartyHost(normalizedHost)) {
     return false;
   }
 
-  const matchesBlockedDomain = normalizedHost && Array.from(adBlockDomains).some(domain => (
+  const matchesBlockedDomain = Array.from(adBlockDomains).some(domain => (
     normalizedHost === domain || normalizedHost.endsWith(`.${domain}`)
   ));
 
@@ -96,11 +85,7 @@ function isBlockedByAdRules(hostname, requestUrl, resourceType) {
   }
 
   const adLikeResourceTypes = ['subFrame', 'image', 'media', 'script', 'xhr'];
-  if (adLikeResourceTypes.includes(resourceType)) {
-    return includesAdKeyword(requestUrl) || includesAdKeyword(normalizedHost);
-  }
-
-  return false;
+  return adLikeResourceTypes.includes(resourceType) && isKnownAdTechHost(normalizedHost);
 }
 
 function loadHostsAdBlockList() {
@@ -129,10 +114,7 @@ function loadHostsAdBlockList() {
         }
 
         const normalizedHost = host.toLowerCase();
-        if (normalizedHost.includes('google')
-          || normalizedHost.includes('doubleclick')
-          || normalizedHost.includes('adservice')
-          || normalizedHost.includes('googlesyndication')) {
+        if (isKnownAdTechHost(normalizedHost)) {
           adBlockDomains.add(normalizedHost);
         }
       });
@@ -155,12 +137,11 @@ function setupAdBlocker(session, preferenceStore) {
     }
 
     try {
-      const requestUrl = details.url || '';
-      const requestHost = new URL(requestUrl).hostname;
+      const requestHost = new URL(details.url || '').hostname;
       const initiator = details.initiator || details.referrer || '';
       const initiatorHost = initiator ? new URL(initiator).hostname : '';
-      const shouldBlock = isBlockedByAdRules(requestHost, requestUrl, details.resourceType)
-        || (!isTuneInFirstPartyHost(initiatorHost) && includesAdKeyword(initiator));
+      const shouldBlock = isBlockedByAdRules(requestHost, details.resourceType)
+        || (isKnownAdTechHost(requestHost) && !isTuneInFirstPartyHost(initiatorHost));
 
       callback({ cancel: shouldBlock });
     } catch {
