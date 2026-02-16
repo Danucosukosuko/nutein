@@ -69,6 +69,16 @@ module.exports = {
             nuteinAdsEnabled: false,
             nuteinDisableTelemetryCrashReports: true,
             nuteinDisableUpdates: true,
+            nuteinHidePremiumMenu: false,
+            nuteinHideAudiobooksMenu: false,
+            nuteinHideRadioMenu: false,
+            nuteinHideRecentsMenu: false,
+            nuteinHideMusicMenu: false,
+            nuteinHideSportsMenu: false,
+            nuteinHideNewsMenu: false,
+            nuteinHidePodcastsMenu: false,
+            nuteinHideRegionsMenu: false,
+            nuteinHideLanguagesMenu: false,
           },
         });
       }

@@ -8,6 +8,16 @@ const {
   nuteinAdsEnabled,
   nuteinDisableTelemetryCrashReports,
   nuteinDisableUpdates,
+  nuteinHidePremiumMenu,
+  nuteinHideAudiobooksMenu,
+  nuteinHideRadioMenu,
+  nuteinHideRecentsMenu,
+  nuteinHideMusicMenu,
+  nuteinHideSportsMenu,
+  nuteinHideNewsMenu,
+  nuteinHidePodcastsMenu,
+  nuteinHideRegionsMenu,
+  nuteinHideLanguagesMenu,
 } = require('./constants/store');
 const localizationKeys = require('./constants/localizations');
 const { getStore } = require('./data/store');
@@ -22,51 +32,81 @@ const defaultNuteinConfig = {
   adsEnabled: false,
   disableTelemetryCrashReports: true,
   disableUpdates: true,
+  hidePremiumMenu: false,
+  hideAudiobooksMenu: false,
+  hideRadioMenu: false,
+  hideRecentsMenu: false,
+  hideMusicMenu: false,
+  hideSportsMenu: false,
+  hideNewsMenu: false,
+  hidePodcastsMenu: false,
+  hideRegionsMenu: false,
+  hideLanguagesMenu: false,
 };
 
-function getNuteinConfig() {
-  const tweaksEnabled = store.get(nuteinTweaksEnabled);
-  const adsEnabled = store.get(nuteinAdsEnabled);
-  const disableTelemetryCrashReports = store.get(nuteinDisableTelemetryCrashReports);
-  const disableUpdates = store.get(nuteinDisableUpdates);
+function getBooleanConfigValue(value, fallbackValue) {
+  return typeof value === 'boolean' ? value : fallbackValue;
+}
 
+function getNuteinConfig() {
   return {
-    tweaksEnabled: typeof tweaksEnabled === 'boolean'
-      ? tweaksEnabled
-      : defaultNuteinConfig.tweaksEnabled,
-    adsEnabled: typeof adsEnabled === 'boolean'
-      ? adsEnabled
-      : defaultNuteinConfig.adsEnabled,
-    disableTelemetryCrashReports: typeof disableTelemetryCrashReports === 'boolean'
-      ? disableTelemetryCrashReports
-      : defaultNuteinConfig.disableTelemetryCrashReports,
-    disableUpdates: typeof disableUpdates === 'boolean'
-      ? disableUpdates
-      : defaultNuteinConfig.disableUpdates,
+    tweaksEnabled: getBooleanConfigValue(store.get(nuteinTweaksEnabled), defaultNuteinConfig.tweaksEnabled),
+    adsEnabled: getBooleanConfigValue(store.get(nuteinAdsEnabled), defaultNuteinConfig.adsEnabled),
+    disableTelemetryCrashReports: getBooleanConfigValue(
+      store.get(nuteinDisableTelemetryCrashReports),
+      defaultNuteinConfig.disableTelemetryCrashReports,
+    ),
+    disableUpdates: getBooleanConfigValue(store.get(nuteinDisableUpdates), defaultNuteinConfig.disableUpdates),
+    hidePremiumMenu: getBooleanConfigValue(store.get(nuteinHidePremiumMenu), defaultNuteinConfig.hidePremiumMenu),
+    hideAudiobooksMenu: getBooleanConfigValue(store.get(nuteinHideAudiobooksMenu), defaultNuteinConfig.hideAudiobooksMenu),
+    hideRadioMenu: getBooleanConfigValue(store.get(nuteinHideRadioMenu), defaultNuteinConfig.hideRadioMenu),
+    hideRecentsMenu: getBooleanConfigValue(store.get(nuteinHideRecentsMenu), defaultNuteinConfig.hideRecentsMenu),
+    hideMusicMenu: getBooleanConfigValue(store.get(nuteinHideMusicMenu), defaultNuteinConfig.hideMusicMenu),
+    hideSportsMenu: getBooleanConfigValue(store.get(nuteinHideSportsMenu), defaultNuteinConfig.hideSportsMenu),
+    hideNewsMenu: getBooleanConfigValue(store.get(nuteinHideNewsMenu), defaultNuteinConfig.hideNewsMenu),
+    hidePodcastsMenu: getBooleanConfigValue(store.get(nuteinHidePodcastsMenu), defaultNuteinConfig.hidePodcastsMenu),
+    hideRegionsMenu: getBooleanConfigValue(store.get(nuteinHideRegionsMenu), defaultNuteinConfig.hideRegionsMenu),
+    hideLanguagesMenu: getBooleanConfigValue(store.get(nuteinHideLanguagesMenu), defaultNuteinConfig.hideLanguagesMenu),
   };
 }
 
 function setNuteinConfig(config = {}) {
   const currentConfig = getNuteinConfig();
   const nextConfig = {
-    tweaksEnabled: typeof config.tweaksEnabled === 'boolean'
-      ? config.tweaksEnabled
-      : currentConfig.tweaksEnabled,
-    adsEnabled: typeof config.adsEnabled === 'boolean'
-      ? config.adsEnabled
-      : currentConfig.adsEnabled,
+    tweaksEnabled: typeof config.tweaksEnabled === 'boolean' ? config.tweaksEnabled : currentConfig.tweaksEnabled,
+    adsEnabled: typeof config.adsEnabled === 'boolean' ? config.adsEnabled : currentConfig.adsEnabled,
     disableTelemetryCrashReports: typeof config.disableTelemetryCrashReports === 'boolean'
       ? config.disableTelemetryCrashReports
       : currentConfig.disableTelemetryCrashReports,
-    disableUpdates: typeof config.disableUpdates === 'boolean'
-      ? config.disableUpdates
-      : currentConfig.disableUpdates,
+    disableUpdates: typeof config.disableUpdates === 'boolean' ? config.disableUpdates : currentConfig.disableUpdates,
+    hidePremiumMenu: typeof config.hidePremiumMenu === 'boolean' ? config.hidePremiumMenu : currentConfig.hidePremiumMenu,
+    hideAudiobooksMenu: typeof config.hideAudiobooksMenu === 'boolean' ? config.hideAudiobooksMenu : currentConfig.hideAudiobooksMenu,
+    hideRadioMenu: typeof config.hideRadioMenu === 'boolean' ? config.hideRadioMenu : currentConfig.hideRadioMenu,
+    hideRecentsMenu: typeof config.hideRecentsMenu === 'boolean' ? config.hideRecentsMenu : currentConfig.hideRecentsMenu,
+    hideMusicMenu: typeof config.hideMusicMenu === 'boolean' ? config.hideMusicMenu : currentConfig.hideMusicMenu,
+    hideSportsMenu: typeof config.hideSportsMenu === 'boolean' ? config.hideSportsMenu : currentConfig.hideSportsMenu,
+    hideNewsMenu: typeof config.hideNewsMenu === 'boolean' ? config.hideNewsMenu : currentConfig.hideNewsMenu,
+    hidePodcastsMenu: typeof config.hidePodcastsMenu === 'boolean' ? config.hidePodcastsMenu : currentConfig.hidePodcastsMenu,
+    hideRegionsMenu: typeof config.hideRegionsMenu === 'boolean' ? config.hideRegionsMenu : currentConfig.hideRegionsMenu,
+    hideLanguagesMenu: typeof config.hideLanguagesMenu === 'boolean'
+      ? config.hideLanguagesMenu
+      : currentConfig.hideLanguagesMenu,
   };
 
   store.set(nuteinTweaksEnabled, nextConfig.tweaksEnabled);
   store.set(nuteinAdsEnabled, nextConfig.adsEnabled);
   store.set(nuteinDisableTelemetryCrashReports, nextConfig.disableTelemetryCrashReports);
   store.set(nuteinDisableUpdates, nextConfig.disableUpdates);
+  store.set(nuteinHidePremiumMenu, nextConfig.hidePremiumMenu);
+  store.set(nuteinHideAudiobooksMenu, nextConfig.hideAudiobooksMenu);
+  store.set(nuteinHideRadioMenu, nextConfig.hideRadioMenu);
+  store.set(nuteinHideRecentsMenu, nextConfig.hideRecentsMenu);
+  store.set(nuteinHideMusicMenu, nextConfig.hideMusicMenu);
+  store.set(nuteinHideSportsMenu, nextConfig.hideSportsMenu);
+  store.set(nuteinHideNewsMenu, nextConfig.hideNewsMenu);
+  store.set(nuteinHidePodcastsMenu, nextConfig.hidePodcastsMenu);
+  store.set(nuteinHideRegionsMenu, nextConfig.hideRegionsMenu);
+  store.set(nuteinHideLanguagesMenu, nextConfig.hideLanguagesMenu);
 }
 
 function isTuneinHost() {
@@ -116,31 +156,42 @@ function removeTweaksCss() {
   }
 }
 
-function hideOptionalSidebarItems() {
-  const optionalMenuTestIds = [
+function setSidebarItemHidden(testId, shouldHide) {
+  const menuItem = document.querySelector(`[data-testid="${testId}"]`);
+  if (!menuItem) {
+    return;
+  }
+
+  const wrapper = menuItem.closest('[class*="navigationMenuItemWrapper"]') || menuItem;
+  wrapper.style.display = shouldHide ? 'none' : '';
+}
+
+function applySidebarVisibilityTweaks(config) {
+  setSidebarItemHidden('premiumMenuItem', config.hidePremiumMenu);
+  setSidebarItemHidden('audiobooksMenuItem', config.hideAudiobooksMenu);
+  setSidebarItemHidden('mapViewMenuItem', config.hideRadioMenu);
+  setSidebarItemHidden('recentsMenuItem', config.hideRecentsMenu);
+  setSidebarItemHidden('musicMenuItem', config.hideMusicMenu);
+  setSidebarItemHidden('sportsMenuItem', config.hideSportsMenu);
+  setSidebarItemHidden('newsMenuItem', config.hideNewsMenu);
+  setSidebarItemHidden('podcastsMenuItem', config.hidePodcastsMenu);
+  setSidebarItemHidden('regionsMenuItem', config.hideRegionsMenu);
+  setSidebarItemHidden('languagesMenuItem', config.hideLanguagesMenu);
+}
+
+function restoreSidebarVisibilityTweaks() {
+  [
     'premiumMenuItem',
     'audiobooksMenuItem',
     'mapViewMenuItem',
-  ];
-
-  optionalMenuTestIds.forEach((testId) => {
-    const menuItem = document.querySelector(`[data-testid="${testId}"]`);
-    if (!menuItem) {
-      return;
-    }
-
-    const wrapper = menuItem.closest('[class*="navigationMenuItemWrapper"]') || menuItem;
-    wrapper.style.display = 'none';
-  });
-}
-
-function restoreOptionalSidebarItems() {
-  const hiddenItems = document.querySelectorAll('[data-testid="premiumMenuItem"], [data-testid="audiobooksMenuItem"], [data-testid="mapViewMenuItem"]');
-
-  hiddenItems.forEach((menuItem) => {
-    const wrapper = menuItem.closest('[class*="navigationMenuItemWrapper"]') || menuItem;
-    wrapper.style.display = '';
-  });
+    'recentsMenuItem',
+    'musicMenuItem',
+    'sportsMenuItem',
+    'newsMenuItem',
+    'podcastsMenuItem',
+    'regionsMenuItem',
+    'languagesMenuItem',
+  ].forEach(testId => setSidebarItemHidden(testId, false));
 }
 
 function removeAdsDomElements() {
@@ -317,23 +368,66 @@ function openNuteinSettingsModal() {
     <h2 style="margin:0 0 12px 0;font-size:20px;">NuteIn Settings</h2>
     <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
       <input id="nutein-tweaks-toggle" type="checkbox" ${currentConfig.tweaksEnabled ? 'checked' : ''} />
-      <span>Activar tweaks visuales (limpieza + sidebar compacto)</span>
+      <span>Enable visual tweaks (cleanup + compact sidebar)</span>
     </label>
     <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
       <input id="nutein-ads-toggle" type="checkbox" ${currentConfig.adsEnabled ? 'checked' : ''} />
-      <span>Activar ADS (si está desactivado, se bloquean)</span>
+      <span>Enable ads (disabled means blocked)</span>
     </label>
     <label style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
       <input id="nutein-disable-telemetry-toggle" type="checkbox" ${currentConfig.disableTelemetryCrashReports ? 'checked' : ''} />
-      <span>Deshabilitar telemetría y crash reports</span>
+      <span>Disable telemetry and crash reports</span>
     </label>
     <label style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
       <input id="nutein-disable-updates-toggle" type="checkbox" ${currentConfig.disableUpdates ? 'checked' : ''} />
-      <span>Desactivar actualizaciones automáticas</span>
+      <span>Disable automatic updates</span>
+    </label>
+
+    <hr style="border:0;border-top:1px solid #3a3d48;margin:12px 0;" />
+    <p style="margin:0 0 8px 0;font-size:13px;opacity:0.8;">Sidebar visibility tweaks</p>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-premium-menu-toggle" type="checkbox" ${currentConfig.hidePremiumMenu ? 'checked' : ''} />
+      <span>Hide Premium</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-audiobooks-menu-toggle" type="checkbox" ${currentConfig.hideAudiobooksMenu ? 'checked' : ''} />
+      <span>Hide Audiobooks</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-radio-menu-toggle" type="checkbox" ${currentConfig.hideRadioMenu ? 'checked' : ''} />
+      <span>Hide Radio</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-recents-menu-toggle" type="checkbox" ${currentConfig.hideRecentsMenu ? 'checked' : ''} />
+      <span>Hide Recents</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-music-menu-toggle" type="checkbox" ${currentConfig.hideMusicMenu ? 'checked' : ''} />
+      <span>Hide Music</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-sports-menu-toggle" type="checkbox" ${currentConfig.hideSportsMenu ? 'checked' : ''} />
+      <span>Hide Sports</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-news-menu-toggle" type="checkbox" ${currentConfig.hideNewsMenu ? 'checked' : ''} />
+      <span>Hide News & Talk</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-podcasts-menu-toggle" type="checkbox" ${currentConfig.hidePodcastsMenu ? 'checked' : ''} />
+      <span>Hide Podcasts</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+      <input id="nutein-hide-regions-menu-toggle" type="checkbox" ${currentConfig.hideRegionsMenu ? 'checked' : ''} />
+      <span>Hide By Location</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
+      <input id="nutein-hide-languages-menu-toggle" type="checkbox" ${currentConfig.hideLanguagesMenu ? 'checked' : ''} />
+      <span>Hide By Language</span>
     </label>
     <div style="display:flex;justify-content:flex-end;gap:8px;">
-      <button id="nutein-settings-cancel" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #555;background:#2a2d37;color:#fff;">Cancelar</button>
-      <button id="nutein-settings-save" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #4f7dff;background:#4f7dff;color:#fff;">Guardar</button>
+      <button id="nutein-settings-cancel" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #555;background:#2a2d37;color:#fff;">Cancel</button>
+      <button id="nutein-settings-save" type="button" style="padding:8px 12px;border-radius:8px;border:1px solid #4f7dff;background:#4f7dff;color:#fff;">Save</button>
     </div>
   `;
 
@@ -353,12 +447,32 @@ function openNuteinSettingsModal() {
     const adsEnabled = modal.querySelector('#nutein-ads-toggle').checked;
     const disableTelemetryCrashReports = modal.querySelector('#nutein-disable-telemetry-toggle').checked;
     const disableUpdates = modal.querySelector('#nutein-disable-updates-toggle').checked;
+    const hidePremiumMenu = modal.querySelector('#nutein-hide-premium-menu-toggle').checked;
+    const hideAudiobooksMenu = modal.querySelector('#nutein-hide-audiobooks-menu-toggle').checked;
+    const hideRadioMenu = modal.querySelector('#nutein-hide-radio-menu-toggle').checked;
+    const hideRecentsMenu = modal.querySelector('#nutein-hide-recents-menu-toggle').checked;
+    const hideMusicMenu = modal.querySelector('#nutein-hide-music-menu-toggle').checked;
+    const hideSportsMenu = modal.querySelector('#nutein-hide-sports-menu-toggle').checked;
+    const hideNewsMenu = modal.querySelector('#nutein-hide-news-menu-toggle').checked;
+    const hidePodcastsMenu = modal.querySelector('#nutein-hide-podcasts-menu-toggle').checked;
+    const hideRegionsMenu = modal.querySelector('#nutein-hide-regions-menu-toggle').checked;
+    const hideLanguagesMenu = modal.querySelector('#nutein-hide-languages-menu-toggle').checked;
 
     setNuteinConfig({
       tweaksEnabled,
       adsEnabled,
       disableTelemetryCrashReports,
       disableUpdates,
+      hidePremiumMenu,
+      hideAudiobooksMenu,
+      hideRadioMenu,
+      hideRecentsMenu,
+      hideMusicMenu,
+      hideSportsMenu,
+      hideNewsMenu,
+      hidePodcastsMenu,
+      hideRegionsMenu,
+      hideLanguagesMenu,
     });
     closeModal();
     window.location.reload();
@@ -415,13 +529,13 @@ function applyNuteinTweaks() {
 
   if (!config.tweaksEnabled) {
     removeTweaksCss();
-    restoreOptionalSidebarItems();
+    restoreSidebarVisibilityTweaks();
     return;
   }
 
   injectTweaksCss();
   removeUpsellButton();
-  hideOptionalSidebarItems();
+  applySidebarVisibilityTweaks(config);
 }
 
 function startNuteinTweaksObserver() {
