@@ -44,17 +44,54 @@ const adBlockDomains = new Set([
   'doubleclick.net',
   'ad.doubleclick.net',
   'pubads.g.doubleclick.net',
+  'g.doubleclick.net',
+  'securepubads.g.doubleclick.net',
+  'pagead2.googlesyndication.com',
+  'partner.googleadservices.com',
+  'tpc.googlesyndication.com',
 ]);
+const adUrlKeywordPatterns = [
+  '/pagead/',
+  '/gampad/',
+  '/ads?',
+  '/ads/',
+  'googleads',
+  'doubleclick',
+  'googlesyndication',
+  'adservice',
+  'freestar',
+  'prebid',
+  'advert',
+  '/hb?',
+];
 let adBlockRulesLoaded = false;
 
-function isBlockedByAdRules(hostname) {
-  if (!hostname) {
+function includesAdKeyword(value) {
+  if (!value) {
     return false;
   }
 
-  return Array.from(adBlockDomains).some(domain => (
-    hostname === domain || hostname.endsWith(`.${domain}`)
+  const lowerValue = value.toLowerCase();
+  return adUrlKeywordPatterns.some(pattern => lowerValue.includes(pattern));
+}
+
+function isBlockedByAdRules(hostname, requestUrl, resourceType) {
+  const normalizedHost = (hostname || '').toLowerCase();
+
+  const matchesBlockedDomain = normalizedHost && Array.from(adBlockDomains).some(domain => (
+    normalizedHost === domain || normalizedHost.endsWith(`.${domain}`)
   ));
+
+  if (matchesBlockedDomain) {
+    return true;
+  }
+
+  if (includesAdKeyword(requestUrl) || includesAdKeyword(normalizedHost)) {
+    return true;
+  }
+
+  return ['subFrame', 'image', 'media', 'script', 'xhr'].includes(resourceType)
+    && includesAdKeyword(requestUrl);
 }
 
 function loadHostsAdBlockList() {
@@ -82,8 +119,12 @@ function loadHostsAdBlockList() {
           return;
         }
 
-        if (host.includes('google') || host.includes('doubleclick')) {
-          adBlockDomains.add(host.toLowerCase());
+        const normalizedHost = host.toLowerCase();
+        if (normalizedHost.includes('google')
+          || normalizedHost.includes('doubleclick')
+          || normalizedHost.includes('adservice')
+          || normalizedHost.includes('googlesyndication')) {
+          adBlockDomains.add(normalizedHost);
         }
       });
     });
@@ -95,7 +136,9 @@ function loadHostsAdBlockList() {
 function setupAdBlocker(session, preferenceStore) {
   loadHostsAdBlockList();
 
-  session.webRequest.onBeforeRequest((details, callback) => {
+  const requestFilter = { urls: ['*://*/*'] };
+
+  session.webRequest.onBeforeRequest(requestFilter, (details, callback) => {
     const adsEnabled = preferenceStore.get(nuteinAdsEnabled);
     if (adsEnabled === true) {
       callback({ cancel: false });
@@ -103,8 +146,12 @@ function setupAdBlocker(session, preferenceStore) {
     }
 
     try {
-      const url = new URL(details.url);
-      const shouldBlock = isBlockedByAdRules(url.hostname.toLowerCase());
+      const requestUrl = details.url || '';
+      const requestHost = new URL(requestUrl).hostname;
+      const initiator = details.initiator || details.referrer || '';
+      const shouldBlock = isBlockedByAdRules(requestHost, requestUrl, details.resourceType)
+        || includesAdKeyword(initiator);
+
       callback({ cancel: shouldBlock });
     } catch {
       callback({ cancel: false });

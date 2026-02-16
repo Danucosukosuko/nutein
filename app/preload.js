@@ -98,18 +98,101 @@ function removeAdsDomElements() {
   }
 }
 
+function hideAdsWithCss() {
+  if (document.getElementById('nutein-adblock-style')) {
+    return;
+  }
+
+  const style = document.createElement('style');
+  style.id = 'nutein-adblock-style';
+  style.textContent = `
+    #sidebarUpsell,
+    #sidebarUpsellLink,
+    #tunein_bottom_banner,
+    #tunein_profile_side,
+    #ad_unit,
+    [data-freestar-ad],
+    [id^="google_ads_iframe"],
+    [id*="google_ads_iframe"],
+    iframe[src*="doubleclick"],
+    iframe[src*="googlesyndication"],
+    iframe[title*="Anuncio"],
+    iframe[aria-label*="Anuncio"],
+    [class*="bottom-banner-module__container"],
+    [class*="upsell-module__sidebarWrapper"],
+    [class*="ad-module"],
+    [data-testid="adUnit"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      max-height: 0 !important;
+      pointer-events: none !important;
+    }
+  `;
+
+  const styleContainer = document.head || document.documentElement;
+  styleContainer.appendChild(style);
+}
+
+function removeAdIframes() {
+  const adIframes = document.querySelectorAll(
+    'iframe[src*="doubleclick"], iframe[src*="googlesyndication"], iframe[id*="google_ads_iframe"], iframe[title*="Anuncio"], iframe[aria-label*="Anuncio"]',
+  );
+
+  adIframes.forEach((iframe) => {
+    const wrapper = iframe.closest('[class*="bottom-banner-module__container"]')
+      || iframe.closest('div[style*="text-align: center"]')
+      || iframe.closest('div[style*="float: right"]')
+      || iframe;
+    wrapper.remove();
+  });
+}
+
 function replaceTuneinCopyright() {
-  const currentYear = new Date().getFullYear();
-  const replacementText = `© ${currentYear} NuteIn Client: https://github.com/danucosukosuko/nutein`;
-  const copyrightRegex = /©\s*(\d{4})\s*TuneIn,\s*Inc/i;
+  const replacementUrl = 'https://github.com/danucosukosuko/nutein';
+  const replacementText = `NuteIn Client: ${replacementUrl}`;
+  const yearPattern = /©\s*\d{4}/i;
+
+  const footerCandidates = document.querySelectorAll('footer, [class*="footer"], [id*="footer"], small, span, p, a');
+
+  footerCandidates.forEach((element) => {
+    const text = element.textContent || '';
+    const normalizedText = text.replace(/\s+/g, ' ').trim();
+
+    if (!normalizedText) {
+      return;
+    }
+
+    const hasTuneInInc = /tunein\s*,?\s*inc/i.test(normalizedText);
+    const hasCopyright = yearPattern.test(normalizedText);
+
+    if (hasTuneInInc && hasCopyright) {
+      const copyrightPrefix = (normalizedText.match(yearPattern) || ['©'])[0];
+      element.textContent = `${copyrightPrefix} ${replacementText}`;
+      return;
+    }
+
+    if (/tunein\s*,?\s*inc/i.test(normalizedText) && /©/i.test(normalizedText)) {
+      element.textContent = normalizedText.replace(/tunein\s*,?\s*inc/ig, replacementText);
+      return;
+    }
+
+    if (/©\s*\d{4}\s*tunein/i.test(normalizedText)) {
+      element.textContent = normalizedText
+        .replace(/tunein\s*,?\s*inc/ig, replacementText)
+        .replace(/©\s*(\d{4})\s*tunein/ig, '© $1 NuteIn Client');
+    }
+  });
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
 
   while (node) {
-    const textValue = node.textContent || '';
-    if (copyrightRegex.test(textValue)) {
-      node.textContent = textValue.replace(copyrightRegex, replacementText);
+    const original = (node.textContent || '').replace(/\s+/g, ' ').trim();
+    if (/©\s*\d{4}/i.test(original) && /tunein\s*,?\s*inc/i.test(original)) {
+      const yearMatch = original.match(/©\s*\d{4}/i);
+      const prefix = yearMatch ? yearMatch[0] : '©';
+      node.textContent = `${prefix} ${replacementText}`;
     }
     node = walker.nextNode();
   }
@@ -232,8 +315,12 @@ function applyNuteinTweaks() {
 
   const config = getNuteinConfig();
 
+  injectNuteinMenuButton();
+
   if (!config.adsEnabled) {
+    hideAdsWithCss();
     removeAdsDomElements();
+    removeAdIframes();
   }
 
   replaceTuneinCopyright();
@@ -243,7 +330,6 @@ function applyNuteinTweaks() {
   }
 
   removeUpsellButton();
-  injectNuteinMenuButton();
 }
 
 function startNuteinTweaksObserver() {
